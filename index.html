@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orchard Lens | AI computer vision for fruit detection, counting, maturity and yield</title>
+  <meta name="description" content="How AI-powered computer vision detects fruit on the tree, counts it, grades its maturity and estimates orchard yield. Interactive demos included.">
+  <meta name="theme-color" content="#1b0f26">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231b0f26'/%3E%3Ccircle cx='32' cy='35' r='12' fill='%23ff8a3d'/%3E%3Cpath d='M12 22v-10h10M42 12h10v10M52 42v10H42M22 52H12V42' fill='none' stroke='%234de3e0' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header class="nav">
+    <div class="wrap nav-in">
+      <a class="brand" href="#top" aria-label="Orchard Lens, back to top">
+        <svg viewBox="0 0 64 64" width="30" height="30" aria-hidden="true"><circle cx="32" cy="35" r="12" fill="#ff8a3d"/><path d="M12 22v-10h10M42 12h10v10M52 42v10H42M22 52H12V42" fill="none" stroke="#4de3e0" stroke-width="4" stroke-linecap="round"/></svg>
+        <span>Orchard Lens</span>
+      </a>
+      <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks">Menu</button>
+      <nav id="navLinks" class="nav-links" aria-label="Sections">
+        <a href="#pipeline">How it works</a>
+        <a href="#lab">Detector</a>
+        <a href="#counting">Counting</a>
+        <a href="#maturity">Maturity</a>
+        <a href="#yield">Yield</a>
+        <a href="#models">Models</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ============ HERO ============ -->
+    <section class="sec hero" id="top">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <h1>Know every fruit before you pick it.</h1>
+          <p class="lede">Computer vision that finds each fruit on the tree, counts it once, reads how ripe it is, and turns the tally into a yield forecast you can plan a harvest around.</p>
+          <div class="cta-row">
+            <a class="btn primary" href="#lab">Try the detector</a>
+            <a class="btn ghost" href="#yield">Estimate a yield</a>
+          </div>
+          <dl class="live" aria-label="Live counts from the demo frame">
+            <div><dt>fruits found</dt><dd id="heroFound">0</dd></div>
+            <div><dt>ripe</dt><dd id="heroRipe" class="c-ripe">0</dd></div>
+            <div><dt>turning</dt><dd id="heroTurning" class="c-turn">0</dd></div>
+          </dl>
+        </div>
+
+        <figure class="hero-fig">
+          <div class="frame brk">
+            <canvas id="heroCanvas" role="img" aria-label="Animated demo: a detector scans an orchard frame and draws a box around each fruit, coloured by ripeness"></canvas>
+            <span class="hud tl">orchard_row_14.mp4</span>
+            <span class="hud br" id="heroHud">apple</span>
+          </div>
+          <figcaption>Simulated frame. A new orchard is generated every few seconds.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ OVERVIEW ============ -->
+    <section class="sec plum" id="overview">
+      <div class="wrap">
+        <header class="sec-head">
+          <h2>Four questions a grower asks, answered from a camera.</h2>
+          <p>Walk an orchard with a clipboard and you sample a handful of trees. A camera on a tractor or drone sees every tree in the row. The same footage answers four different questions.</p>
+        </header>
+
+        <div class="tiles">
+          <article class="tile t-detect">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="24" cy="26" r="9"/><path d="M8 14V8h6M34 8h6v6M40 34v6h-6M14 40H8v-6"/></svg>
+            <h3>Where is each fruit?</h3>
+            <p>Detection draws a box around every fruit in a photo or video frame, even when a leaf covers part of it.</p>
+            <p class="out"><b>Output</b> Boxes with a confidence score</p>
+          </article>
+          <article class="tile t-count">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 10v28M20 10v28M28 10v28M36 10v28M7 32L41 16"/></svg>
+            <h3>How many are there?</h3>
+            <p>Tracking follows each fruit from frame to frame, so it is counted once instead of once per frame.</p>
+            <p class="out"><b>Output</b> Unique fruit per row, tree or block</p>
+          </article>
+          <article class="tile t-mature">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="24" cy="24" r="14"/><path d="M24 10a14 14 0 0 1 0 28z" fill="currentColor"/></svg>
+            <h3>How ripe is it?</h3>
+            <p>Colour, and sometimes texture or near-infrared light, places each fruit on a ripeness scale.</p>
+            <p class="out"><b>Output</b> Unripe, turning, ripe or overripe</p>
+          </article>
+          <article class="tile t-yield">
+            <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M8 40h32M14 40V28M22 40V20M30 40V24M38 40V12"/></svg>
+            <h3>How much will I harvest?</h3>
+            <p>Counts, fruit size and ripeness are combined, with a correction for fruit no camera angle can see.</p>
+            <p class="out"><b>Output</b> Tonnes per block and a harvest window</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ PIPELINE ============ -->
+    <section class="sec light" id="pipeline">
+      <div class="wrap">
+        <header class="sec-head">
+          <h2>From footage to forecast in six steps.</h2>
+          <p>Each step feeds the next. Pick one to see what happens there, what to watch for, and a short code sample you can copy into your own project.</p>
+        </header>
+
+        <div class="stepper">
+          <div class="step-tabs" id="stepTabs" role="tablist" aria-label="Pipeline steps" aria-orientation="vertical"></div>
+          <div class="step-panel" id="stepPanel" role="tabpanel" tabindex="0"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DETECTOR LAB ============ -->
+    <section class="sec" id="lab">
+      <div class="wrap">
+        <header class="sec-head">
+          <h2>Detector lab: change the conditions and watch accuracy move.</h2>
+          <p>Add leaves, dim the light, then drag the confidence threshold. A strict threshold gives fewer false alarms but misses more fruit. A loose one finds nearly everything, along with some leaves.</p>
+        </header>
+
+        <div class="lab-grid">
+          <div class="frame brk" id="labFrame">
+            <canvas id="labCanvas" role="img" aria-label="Simulated orchard frame with detection boxes. Hover a box for details."></canvas>
+            <div class="tip" id="labTip" role="status" hidden></div>
+          </div>
+
+          <form class="panel controls" onsubmit="return false" aria-label="Detector lab controls">
+            <fieldset>
+              <legend>Fruit</legend>
+              <div class="seg">
+                <label><input type="radio" name="labFruit" value="apple" checked><span>Apple</span></label>
+                <label><input type="radio" name="labFruit" value="tomato"><span>Tomato</span></label>
+                <label><input type="radio" name="labFruit" value="orange"><span>Orange</span></label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Light</legend>
+              <div class="seg">
+                <label><input type="radio" name="labLight" value="sun" checked><span>Sunny</span></label>
+                <label><input type="radio" name="labLight" value="overcast"><span>Overcast</span></label>
+                <label><input type="radio" name="labLight" value="dusk"><span>Dusk</span></label>
+                <label><input type="radio" name="labLight" value="glare"><span>Backlit</span></label>
+              </div>
+            </fieldset>
+
+            <label class="range"><span>Fruit in frame <output id="labCountO">42</output></span>
+              <input type="range" id="labCount" min="10" max="90" value="42"></label>
+            <label class="range"><span>Leaf cover <output id="labOccO">35%</output></span>
+              <input type="range" id="labOcc" min="0" max="100" value="35"></label>
+            <label class="range"><span>Confidence threshold <output id="labThrO">0.50</output></span>
+              <input type="range" id="labThr" min="5" max="95" value="50"></label>
+
+            <label class="check"><input type="checkbox" id="labLabels" checked> Show labels</label>
+            <label class="check"><input type="checkbox" id="labMisses"> Circle the fruit it missed</label>
+
+            <div class="btn-row">
+              <button type="button" class="btn primary" id="labRun">Run detection</button>
+              <button type="button" class="btn ghost" id="labNew">New frame</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="readouts" aria-label="Detection results">
+          <div class="stat"><span>Fruit in frame</span><strong id="labGT">0</strong><small>ground truth</small></div>
+          <div class="stat"><span>Detected</span><strong id="labDet">0</strong><small>boxes shown</small></div>
+          <div class="stat"><span>Precision</span><strong id="labPrec">0%</strong><small>boxes that are real fruit</small></div>
+          <div class="stat"><span>Recall</span><strong id="labRec">0%</strong><small>real fruit that was found</small></div>
+          <div class="stat"><span>F1 score</span><strong id="labF1">0</strong><small>balance of the two</small></div>
+          <div class="stat"><span>Count error</span><strong id="labErr">0%</strong><small>detected vs actual</small></div>
+        </div>
+
+        <div class="lab-foot">
+          <div class="panel">
+            <h3>Maturity of what was detected</h3>
+            <div id="labBars" class="bars"></div>
+          </div>
+          <div class="panel">
+            <h3>Where the numbers come from</h3>
+            <dl class="mini">
+              <div><dt>True positives</dt><dd id="labTP">0</dd></div>
+              <div><dt>False positives</dt><dd id="labFP">0</dd></div>
+              <div><dt>Missed fruit</dt><dd id="labFN">0</dd></div>
+            </dl>
+            <p class="fine">This is a simulation. Confidence drops as leaves cover a fruit and as light worsens, as it does for a real detector, but no neural network is running here.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ COUNTING ============ -->
+    <section class="sec plum" id="counting">
+      <div class="wrap">
+        <header class="sec-head">
+          <h2>Counting is a tracking problem, not a detection problem.</h2>
+          <p>A camera moving along a row sees the same apple in dozens of frames. Add up every frame's detections and the total balloons. Give each fruit an ID and count it once as it crosses a line, and the number becomes honest.</p>
+        </header>
+
+        <div class="frame brk wide">
+          <canvas id="trackCanvas" role="img" aria-label="Fruit slides across the frame from right to left. A dashed line marks where each fruit is counted."></canvas>
+        </div>
+
+        <div class="track-bar">
+          <div class="btn-row">
+            <button type="button" class="btn primary" id="tkPlay">Play</button>
+            <button type="button" class="btn ghost" id="tkRestart">Restart</button>
+          </div>
+          <label class="check"><input type="checkbox" id="tkSmart" checked> Tracker remembers fruit hidden behind a leaf</label>
+          <label class="check"><input type="checkbox" id="tkDrop" checked> Hide some fruit behind leaves</label>
+        </div>
+        <p class="status" id="tkStatus" aria-live="polite">Press play to start the pass.</p>
+
+        <div class="readouts three" aria-label="Counting results">
+          <div class="stat"><span>Fruit in the row</span><strong id="tkTruth">30</strong><small>ground truth</small></div>
+          <div class="stat bad"><span>Sum of frame detections</span><strong id="tkNaive">0</strong><small>no tracking, sampled every 1.6 s</small></div>
+          <div class="stat good"><span>Counted at the line</span><strong id="tkTracked">0</strong><small>one count per tracked ID</small></div>
+          <div class="stat"><span>Tracked count error</span><strong id="tkErr">0%</strong><small>vs ground truth</small></div>
+        </div>
+
+        <div class="trio">
+          <div><h3>Why per-frame sums fail</h3><p>A fruit stays in view for several seconds. Every sample sees it again, so the total grows with how long you film, not with how much fruit there is.</p></div>
+          <div><h3>How tracking fixes it</h3><p>Trackers such as ByteTrack or DeepSORT match boxes between frames using position and motion. Each fruit keeps one ID, and the ID is counted once.</p></div>
+          <div><h3>What still goes wrong</h3><p>Turn off the memory option above. When a leaf hides a fruit at the line, a basic tracker loses its ID and the fruit is never counted. Better trackers keep a lost ID alive for a few frames.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MATURITY ============ -->
+    <section class="sec light" id="maturity">
+      <div class="wrap">
+        <header class="sec-head">
+          <h2>Maturity: where on the colour curve is this fruit?</h2>
+          <p>Ripening is a slow colour change, and cameras measure colour well. Drag the ripeness index and read the same hue, saturation and value numbers a vision system would extract from the fruit's pixels.</p>
+        </header>
+
+        <div class="mat-grid">
+          <figure class="plate">
+            <canvas id="matCanvas" role="img" aria-label="A single fruit whose colour changes with the ripeness slider"></canvas>
+            <figcaption>Ripeness index <b id="matVal">0.62</b></figcaption>
+          </figure>
+
+          <div class="mat-side">
+            <div class="seg" role="radiogroup" aria-label="Fruit">
+              <label><input type="radio" name="matFruit" value="apple" checked><span>Apple</span></label>
+              <label><input type="radio" name="matFruit" value="tomato"><span>Tomato</span></label>
+              <label><input type="radio" name="matFruit" value="orange"><span>Orange</span></label>
+            </div>
+
+            <label class="range big"><span>Ripeness index</span>
+              <input type="range" id="matRange" min="0" max="100" value="62"></label>
+
+            <div class="track-wrap">
+              <div class="track" id="matTrack"><i class="marker" id="matMarker"></i></div>
+              <div class="stage-names"><span style="width:25%">Unripe</span><span style="width:30%">Turning</span><span style="width:30%">Ripe</span><span style="width:15%">Overripe</span></div>
+            </div>
+
+            <button type="button" class="btn dark" id="matPlay">Ripen over time</button>
+
+            <div class="mat-read">
+              <div class="verdict"><span class="chip" id="matStage">Ripe</span><i class="swatch" id="matSwatch"></i></div>
+              <dl class="hsv">
+                <div><dt>Hue</dt><dd id="matH">0°</dd></div>
+                <div><dt>Saturation</dt><dd id="matS">0%</dd></div>
+                <div><dt>Value</dt><dd id="matV">0%</dd></div>
+              </dl>
+              <p class="plan" id="matPlan"></p>
+              <p class="fine" id="matNote"></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="stage-grid">
+          <div style="--c:#8fd16a"><h3>Unripe</h3><p>Mostly green. Leave it. Picking now means poor flavour and a short life in storage.</p></div>
+          <div style="--c:#ffc247"><h3>Turning</h3><p>Colour is shifting. This is the group to re-scan in a week, because it decides the next harvest pass.</p></div>
+          <div style="--c:#4de3e0"><h3>Ripe</h3><p>Full colour. Harvest now, and book labour and bins for the count of fruit in this group.</p></div>
+          <div style="--c:#ff6fb5"><h3>Overripe</h3><p>Past peak. Good for juice or processing, and a signal that harvest timing slipped.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ YIELD ============ -->
+    <section class="sec" id="yield">
+      <div class="wrap">
+        <header class="sec-head">
+          <h2>Yield estimator: from a count to tonnes.</h2>
+          <p>Enter what the camera counted on a typical tree, then say how much of the real crop it misses. The estimate is shown as a range, because the correction factors are never exact.</p>
+        </header>
+
+        <div class="yield-grid">
+          <form class="panel" id="yieldForm" aria-label="Yield estimator inputs">
+            <div class="presets" role="group" aria-label="Start from a preset">
+              <button type="button" data-preset="apple" aria-pressed="true">Apple orchard</button>
+              <button type="button" data-preset="orange" aria-pressed="false">Orange grove</button>
+              <button type="button" data-preset="tomato" aria-pressed="false">Tomato field</button>
+            </div>
+
+            <div class="fields">
+              <label>Area (hectares)<input type="number" id="yArea" value="12" min="0" step="0.5"></label>
+              <label>Trees or plants per hectare<input type="number" id="yDensity" value="800" min="0" step="10"></label>
+              <label>Fruit counted per tree by the camera<input type="number" id="yCounted" value="95" min="0" step="1"></label>
+              <label>Average fruit weight (grams)<input type="number" id="yWeight" value="180" min="0" step="5"></label>
+            </div>
+
+            <label class="range"><span>Detector recall <output id="yRecallO">88%</output></span>
+              <input type="range" id="yRecall" min="50" max="99" value="88"></label>
+            <label class="range"><span>Fruit hidden from every angle <output id="yHiddenO">12%</output></span>
+              <input type="range" id="yHidden" min="0" max="40" value="12"></label>
+            <label class="range"><span>Marketable after culls <output id="yMarketO">90%</output></span>
+              <input type="range" id="yMarket" min="50" max="100" value="90"></label>
+            <label class="range"><span>Share that is ripe <output id="yRipeO">55%</output></span>
+              <input type="range" id="yRipe" min="0" max="100" value="55"></label>
+            <label class="range"><span>Share that is turning <output id="yTurningO">25%</output></span>
+              <input type="range" id="yTurning" min="0" max="100" value="25"></label>
+          </form>
+
+          <div class="results">
+            <div class="big-result">
+              <span class="lbl">Marketable crop</span>
+              <p><strong id="yTotal">0</strong> <em>tonnes</em></p>
+              <p class="range-line">Likely between <b id="yRange">0</b></p>
+            </div>
+
+            <div class="split">
+              <div class="bar" id="yBar" role="img" aria-label="Share of the crop by maturity stage"></div>
+              <dl class="legend">
+                <div><dt><i style="background:#8fd16a"></i>Unripe</dt><dd id="yUnripeT">0 t</dd></div>
+                <div><dt><i style="background:#ffc247"></i>Turning</dt><dd id="yTurnT">0 t</dd></div>
+                <div><dt><i style="background:#4de3e0"></i>Ripe now</dt><dd id="yRipeT">0 t</dd></div>
+              </dl>
+            </div>
+
+            <dl class="facts">
+              <div><dt>Fruit per tree, corrected</dt><dd id="yPerTree">0</dd></div>
+              <div><dt>Fruit in the block</dt><dd id="yFruits">0</dd></div>
+              <div><dt>Crop after culls</dt><dd id="yMarketable">0</dd></div>
+              <div><dt>Tonnes per hectare</dt><dd id="yPerHa">0</dd></div>
+              <div><dt>Bins for the ripe fruit (400 kg)</dt><dd id="yBins">0</dd></div>
+            </dl>
+
+            <p class="formula"><code>fruit per tree = counted / recall / (1 - hidden share)</code><br><code>crop = trees x fruit per tree x fruit weight x marketable share</code></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MODELS ============ -->
+    <section class="sec plum" id="models">
+      <div class="wrap">
+        <header class="sec-head">
+          <h2>Choosing a model: speed against hidden fruit.</h2>
+          <p>No single model wins everywhere. A tractor-mounted edge box needs speed. A research team labelling cluttered canopies may prefer accuracy. This is a rough guide, not a benchmark.</p>
+        </header>
+
+        <div class="table-wrap">
+          <table class="models">
+            <caption class="sr">Comparison of approaches to fruit detection and counting</caption>
+            <thead>
+              <tr><th scope="col">Approach</th><th scope="col">Good for</th><th scope="col">Speed</th><th scope="col">Cluttered canopy</th><th scope="col">Runs on small devices</th></tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">YOLO family<small>YOLOv8, YOLO11 and kin</small></th><td>Real-time detection and tracking from video</td><td><span class="dots" aria-label="5 out of 5">&#9679;&#9679;&#9679;&#9679;&#9679;</span></td><td><span class="dots" aria-label="3 out of 5">&#9679;&#9679;&#9679;<i>&#9679;&#9679;</i></span></td><td><span class="dots" aria-label="5 out of 5">&#9679;&#9679;&#9679;&#9679;&#9679;</span></td></tr>
+              <tr><th scope="row">Faster R-CNN<small>two-stage detector</small></th><td>Accurate boxes on small, still images</td><td><span class="dots" aria-label="2 out of 5">&#9679;&#9679;<i>&#9679;&#9679;&#9679;</i></span></td><td><span class="dots" aria-label="4 out of 5">&#9679;&#9679;&#9679;&#9679;<i>&#9679;</i></span></td><td><span class="dots" aria-label="2 out of 5">&#9679;&#9679;<i>&#9679;&#9679;&#9679;</i></span></td></tr>
+              <tr><th scope="row">Instance segmentation<small>Mask R-CNN, YOLO-seg</small></th><td>Exact fruit outline for size, and for separating touching fruit</td><td><span class="dots" aria-label="2 out of 5">&#9679;&#9679;<i>&#9679;&#9679;&#9679;</i></span></td><td><span class="dots" aria-label="5 out of 5">&#9679;&#9679;&#9679;&#9679;&#9679;</span></td><td><span class="dots" aria-label="2 out of 5">&#9679;&#9679;<i>&#9679;&#9679;&#9679;</i></span></td></tr>
+              <tr><th scope="row">Transformer detectors<small>DETR, RT-DETR</small></th><td>Crowded scenes, fewer hand-tuned post-processing steps</td><td><span class="dots" aria-label="3 out of 5">&#9679;&#9679;&#9679;<i>&#9679;&#9679;</i></span></td><td><span class="dots" aria-label="4 out of 5">&#9679;&#9679;&#9679;&#9679;<i>&#9679;</i></span></td><td><span class="dots" aria-label="3 out of 5">&#9679;&#9679;&#9679;<i>&#9679;&#9679;</i></span></td></tr>
+              <tr><th scope="row">Density-map counting<small>regress a count, skip boxes</small></th><td>Very dense fruit where boxes would overlap</td><td><span class="dots" aria-label="4 out of 5">&#9679;&#9679;&#9679;&#9679;<i>&#9679;</i></span></td><td><span class="dots" aria-label="4 out of 5">&#9679;&#9679;&#9679;&#9679;<i>&#9679;</i></span></td><td><span class="dots" aria-label="3 out of 5">&#9679;&#9679;&#9679;<i>&#9679;&#9679;</i></span></td></tr>
+              <tr><th scope="row">Colour thresholding<small>HSV and morphology</small></th><td>Quick baseline on plain, well-lit backgrounds</td><td><span class="dots" aria-label="5 out of 5">&#9679;&#9679;&#9679;&#9679;&#9679;</span></td><td><span class="dots" aria-label="1 out of 5">&#9679;<i>&#9679;&#9679;&#9679;&#9679;</i></span></td><td><span class="dots" aria-label="5 out of 5">&#9679;&#9679;&#9679;&#9679;&#9679;</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ MEASURING ============ -->
+    <section class="sec light" id="measure">
+      <div class="wrap">
+        <header class="sec-head">
+          <h2>How to tell whether it works.</h2>
+          <p>A good-looking demo proves little. Judge a system on held-out orchards, with the metric that matches the job.</p>
+        </header>
+
+        <div class="metric-grid">
+          <article><h3>Precision</h3><p>Of the boxes drawn, what share are real fruit? Low precision means leaves and glints are being counted.</p></article>
+          <article><h3>Recall</h3><p>Of the real fruit, what share was found? This is the number that drives under-counting.</p></article>
+          <article><h3>F1 and mAP</h3><p>F1 balances precision and recall at one threshold. mAP summarises accuracy across all thresholds and box overlaps.</p></article>
+          <article><h3>Counting error</h3><p>Mean absolute error and R-squared against hand counts per tree. This is the check that matters for counting.</p></article>
+          <article><h3>Yield error</h3><p>Percent difference between the forecast and the weighed harvest. The only metric the grower finally cares about.</p></article>
+        </div>
+        <p class="fine wide-fine">Published detectors on controlled datasets often report F1 scores in the high 0.8s to low 0.9s. Expect lower in real orchards with heavy leaf cover, so always test on your own rows.</p>
+
+        <h3 class="sub">Datasets to start from</h3>
+        <div class="data-grid">
+          <article><h4>MinneApple</h4><p>Orchard images of apple trees with boxes, segmentation masks and counts. Built for detection, segmentation and counting research.</p></article>
+          <article><h4>Laboro Tomato</h4><p>Tomato images annotated by ripeness stage, which makes it a direct fit for combined detection and maturity work.</p></article>
+          <article><h4>Fruits-360</h4><p>Large collection of single fruit and vegetable images on plain backgrounds. Useful for classification, less so for field detection.</p></article>
+          <article><h4>Your own rows</h4><p>Nothing beats frames from your variety, your trellis and your light. A few hundred well-chosen frames usually matter more than a bigger public set.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CHALLENGES ============ -->
+    <section class="sec" id="challenges">
+      <div class="wrap">
+        <header class="sec-head">
+          <h2>What still goes wrong, and what is next.</h2>
+          <p>Fruit detection works well in controlled conditions and gets harder outdoors. These are the problems researchers and growers keep running into.</p>
+        </header>
+
+        <div class="two-col">
+          <div>
+            <h3 class="sub">Hard problems today</h3>
+            <ul class="issues">
+              <li><b>Occlusion.</b> Leaves, branches and other fruit hide much of the crop. Some fruit is invisible from every side.</li>
+              <li><b>Lighting.</b> Shadow, glare and dusk change colour, which hurts both detection and ripeness.</li>
+              <li><b>Small, clustered fruit.</b> Grapes and berries overlap so heavily that boxes stop working.</li>
+              <li><b>Domain shift.</b> A model trained on one variety, orchard or season often drops in accuracy on another.</li>
+              <li><b>Labelling cost.</b> Boxing hundreds of fruit per image by hand is slow, and it is where most project time goes.</li>
+            </ul>
+          </div>
+          <div>
+            <h3 class="sub">Where the field is heading</h3>
+            <ul class="issues next">
+              <li><b>Edge inference.</b> Running the model on the tractor, so counts are ready before the row ends.</li>
+              <li><b>Depth and 3D.</b> RGB-D and multi-view reconstruction to measure size and estimate hidden fruit.</li>
+              <li><b>Multispectral sensing.</b> Near-infrared and hyperspectral cameras that read sugar and firmness, not just colour.</li>
+              <li><b>Foundation models.</b> Promptable segmentation and vision-language models that cut labelling effort.</li>
+              <li><b>Robotic harvest.</b> The same detections guiding a picker arm to ripe fruit only.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ FAQ ============ -->
+    <section class="sec plum" id="faq">
+      <div class="wrap narrow">
+        <header class="sec-head single">
+          <h2>Questions people ask first.</h2>
+        </header>
+        <div class="faq">
+          <details open><summary>Do I need special cameras?</summary><p>No. A phone or action camera is enough to start. Specialised hardware such as depth or near-infrared cameras becomes worthwhile when you need fruit size or internal quality, not only counts.</p></details>
+          <details><summary>How many labelled images do I need?</summary><p>For one variety in one orchard, a few hundred varied images with a pretrained model is a realistic start. More varieties, seasons and lighting conditions need more, and the improvement usually comes from variety, not volume.</p></details>
+          <details><summary>Why does the camera count fewer fruit than the grower?</summary><p>Some fruit is hidden behind leaves or on the far side of the tree. That is why yield estimates use a correction factor measured against hand counts on a small sample of trees.</p></details>
+          <details><summary>Can it tell the variety or detect disease?</summary><p>The same pipeline can be trained for it, with different labels. This site focuses on detection, counting, maturity and yield.</p></details>
+          <details><summary>Are the demos on this page real AI?</summary><p>They are simulations built to teach how these systems behave. The code samples in the pipeline section use real libraries and can be run on your own footage.</p></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-in">
+      <div>
+        <p class="foot-brand">Orchard Lens</p>
+        <p>AI-powered computer vision for fruit detection, counting, maturity assessment and yield estimation.</p>
+      </div>
+      <nav aria-label="Footer">
+        <a href="#pipeline">How it works</a>
+        <a href="#lab">Detector lab</a>
+        <a href="#yield">Yield estimator</a>
+        <a href="#top">Back to top</a>
+      </nav>
+      <p class="fine">&copy; <span id="year">2026</span> Orchard Lens. Educational project. Demos are simulated.</p>
+    </div>
+  </footer>
+
+  <script src="js/common.js"></script>
+  <script src="js/hero.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/lab.js"></script>
+  <script src="js/tracker.js"></script>
+  <script src="js/maturity.js"></script>
+  <script src="js/yield.js"></script>
+</body>
+</html>
